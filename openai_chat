@@ -1,0 +1,123 @@
+import openai
+
+# GPT API 키 설정
+client = openai.OpenAI(api_key = "api_key")
+
+# 사용자 프로파일
+
+user1_profile = {
+    "age_group": "19~29세",
+
+    "gender": "여성",
+
+    "is_pregnant":  False,
+
+    "allergen": ["새우"],
+
+    "disease": [],
+
+    "avoid_nutrient": ["지방", "트랜스지방", "포화지방"],
+
+    "is_vegetarian": False,
+
+    "dietary_goal": ["체중 감량"]
+}
+
+user2_profile = {
+    "age_group": "65~74세",
+
+    "gender": "남성",
+
+    "allergen": ["땅콩"],
+
+    "disease": ["당뇨병"],
+
+    "avoid_nutrient": ["나트륨"],
+
+    "is_vegetarian": False,
+
+    "dietary_goal": []
+}
+
+user3_profile = {
+    "age_group": "30~49세",
+
+    "gender": "여성",
+
+    "is_pregnant": True,
+
+    "allergen": [],
+
+    "disease": [],
+
+    "avoid_nutrient": [],
+
+    "is_vegetarian": True,
+
+    "dietary_goal": ["근육량 증가"]
+}
+
+# 프롬프트 구성 함수
+def create_prompt(profile, request):
+  if profile["gender"] == "여성":
+    is_pregnant_str = f"- 임신 여부: {'예' if profile['is_pregnant'] else '아니오'}"
+  else:
+    is_pregnant_str = ""
+
+  allergen_str = ", ".join(profile["allergen"]) if profile["allergen"] else "없음"
+  disease_str = ", ".join(profile["disease"]) if profile["disease"] else "없음"
+  avoid_nutrient_str = ", ".join(profile["avoid_nutrient"]) if profile["avoid_nutrient"] else "없음"
+  dietary_goal_str = ", ".join(profile["dietary_goal"]) if profile["dietary_goal"] else "없음"
+
+  prompt = f"""
+  [사용자 정보]
+  - 연령: {profile['age_group']}
+  - 성별: {profile['gender']}
+  {is_pregnant_str}
+  - 알레르기: {allergen_str}
+  - 질병: {disease_str}
+  - 회피 성분: {avoid_nutrient_str}
+  - 채식 여부: {'예' if profile['is_vegetarian'] else '아니오'}
+  - 식이 목표: {dietary_goal_str}
+
+  [요청]
+  {request}
+  섭취하면 안 되거나 주의가 필요한 경우, 어떤 성분 때문인지를 사용자 정보와 관련지어서 설명해줘.
+  """
+
+  return prompt
+
+# GPT 호출 함수
+def get_gpt_response(prompt):
+  response = client.chat.completions.create(
+      model="gpt-4o",
+      messages=[
+          {"role": "system", "content": "You are a helpful assistant."},
+          {"role": "user", "content": prompt}
+      ],
+      temperature=0.7,
+      max_tokens=700
+  )
+
+  return response.choices[0].message.content
+
+print("사용자1")
+request = input()
+prompt = create_prompt(user1_profile, request)
+response = get_gpt_response(prompt)
+print("\n")
+print(response)
+
+print("사용자2")
+request = input()
+prompt = create_prompt(user2_profile, request)
+response = get_gpt_response(prompt)
+print("\n")
+print(response)
+
+print("사용자3")
+request = input()
+prompt = create_prompt(user3_profile, request)
+response = get_gpt_response(prompt)
+print("\n")
+print(response)
