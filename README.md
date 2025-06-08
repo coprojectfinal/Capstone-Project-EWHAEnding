@@ -11,9 +11,8 @@ AI 기반 성분 분석 및 추천 알고리즘을 통해, 온라인 쇼핑몰�
 ### 📂 Image_Recognition
 ↪︎ Google Vision API를 이용하여 제품 이미지를 인식, 판별.
 ### 📂 Recommend_Algorithms
-↪︎ XGBoost와 LightFM을 이용하여 사용자의 건강 조건과 기호에 맞는 상품을 맞춤 추천.
+↪︎ XGBoost와 LightFM을 이용하여 사용자의 건강 조건과 기호에 맞는 상품을 맞춤 추천.  
 
-
-
+---
 ### 💚Teammates
 2176038 김나현(AI), 1876019 권서현(BE), 2176360 조세령(FE)
