@@ -1,0 +1,65 @@
+import os
+import pandas as pd
+from google.cloud import vision
+from difflib import SequenceMatcher
+
+os.environ["GOOGLE_APPLICATION_CREDENTIALS"] = "GCV.json"
+
+# 제품 DB에서 품명 불러오기
+def load_product_names(file_path):
+    df = pd.read_csv(file_path)
+    product_names = df["품명"].dropna().tolist()
+    return product_names
+
+# 이미지에서 텍스트 추출
+def extract_text_from_image(image_path):
+    client = vision.ImageAnnotatorClient()
+
+    with open(image_path, 'rb') as image_file:
+      content = image_file.read()
+
+    image = vision.Image(content=content)
+
+    response = client.text_detection(image=image)
+    text = response.text_annotations[0].description if response.text_annotations else "No text found in the image."
+
+    return text
+
+# 추출된 텍스트 나누기
+def split_text(text):
+  lines = text.split('\n')
+  splited_texts = [line.strip() for line in lines if 3 <= len(line) <= 10]
+  return splited_texts
+
+# DB 비교
+def find_best_match(splited_texts, product_names):
+    brand_names = ["삼양", "농심"]
+
+    filtered_texts = [
+        texts for texts in splited_texts
+        if not any(brand in texts for brand in brand_names)
+    ]
+
+    best_match = None
+    best_score = 0
+
+    for filtered_text in filtered_texts:
+        for product_name in product_names:
+            score = SequenceMatcher(None, filtered_text, product_name).ratio()
+            if score > best_score:
+                best_score = score
+                best_match = product_name
+
+    return best_match
+
+def recognize_product(image_path, file_path):
+    text = extract_text_from_image(image_path)
+    splited_texts = split_text(text)
+    product_names = load_product_names(file_path)
+    matching_product = find_best_match(splited_texts, product_names)
+    if matching_product:
+      print(matching_product)
+    else:
+      print("No matching product found.")
+
+recognize_product("불닭볶음면.jpg", "라면.csv")
