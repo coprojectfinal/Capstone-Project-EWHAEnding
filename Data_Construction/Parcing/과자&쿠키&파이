@@ -1,0 +1,72 @@
+# 1. 파일 업로드
+from google.colab import files
+uploaded = files.upload()
+
+import json
+import re
+import pandas as pd
+
+# JSON 파일 불러오기
+with open("과자&쿠키&파이_OCR_결과.json", "r", encoding="utf-8") as f:
+    data = json.load(f)
+
+# 알레르기 유발 성분 리스트
+allergen_keywords = [
+    "밀", "메밀", "대두", "견과류", "육류", "갑각류",
+    "복숭아", "토마토", "난류", "우유", "조개류", "굴", "전복", "홍합", "아황산"
+]
+
+# '원재료명' ~ '영양정보' 전까지 텍스트에서 알레르기 성분 추출
+def extract_allergen_ingredients(text):
+    text = text.replace(" ", "").replace("\n", "")
+    start = re.search(r"(원재료명|원료명)", text)
+    end = re.search(r"영양정보|함유", text)
+
+    if start and end:
+        raw_text = text[start.end():end.start()]
+        found = []
+        for kw in allergen_keywords:
+            if kw == "밀":
+                # '밀' 뒤에 한글이 없는 경우만 포함
+                if re.search(rf"{kw}(?![가-힣])", raw_text):
+                    found.append(kw)
+            else:
+                if kw in raw_text:
+                    found.append(kw)
+        return ", ".join(found) if found else None
+    return None
+
+# '영양정보' 추출 함수 ('1일' 포함 제거)
+def extract_nutrition_block_cleaned(text):
+    text = text.replace(" ", "").replace("\n", "")
+    pattern = r"영양정보(.*?1일)"
+    match = re.search(pattern, text)
+    if match:
+        return match.group(1).replace("1일", "").strip()
+    return None
+
+# 데이터 파싱 및 정리
+results = []
+for item in data:
+    content = item.get("ocr결과", [])
+    품명 = item.get("품명", "")
+    full_text = "\n".join(content)
+
+    entry = {
+        "품명": 품명,
+        "원재료명": extract_allergen_ingredients(full_text),
+        "영양정보": extract_nutrition_block_cleaned(full_text)
+    }
+
+    results.append(entry)
+
+# DataFrame 생성 및 빈 값 제거
+df = pd.DataFrame(results)
+df = df.dropna()
+
+# 결과 출력
+from IPython.display import display
+display(df)
+
+# 또는 저장
+df.to_csv("과자_쿠키_파이_성분표.csv", index=False)
